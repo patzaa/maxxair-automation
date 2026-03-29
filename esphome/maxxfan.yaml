@@ -1,0 +1,232 @@
+esphome:
+  name: maxxfan
+  friendly_name: MaxxFan
+  on_boot:
+    priority: -100
+    then:
+      lambda: |-
+        ESP_LOGD("boot", "Executing on_boot logic");
+        if (!id(is_restart)) {
+          // Full re-power: apply MaxxFan hardware defaults
+          ESP_LOGD("boot", "Setting globals to re-power values");
+          id(actual_fan_power) = 0;     // Off
+          id(actual_fan_speed) = 4;     // 40%
+          id(actual_fan_direction) = 1; // Exhaust
+          id(actual_fan_cover) = 0;     // Closed
+        }
+        ESP_LOGD("boot", "Updating entities with values from globals");
+        // Set speed first, then power to avoid briefly running at speed 10
+        auto call = id(MaxxFan).make_call();
+        call.set_speed(id(actual_fan_speed));
+        call.perform();
+        call.set_state(id(actual_fan_power));
+        call.perform();
+        id(maxxfan_direction).publish_state(id(actual_fan_direction));
+        id(maxxfan_cover).publish_state(id(actual_fan_cover));
+        ESP_LOGD("boot", "Power: %d, Speed: %d, Direction: %d, Cover: %d",
+                 id(actual_fan_power), id(actual_fan_speed),
+                 id(actual_fan_direction), id(actual_fan_cover));
+        // Reset flags for next boot
+        id(is_restart) = false;
+        id(is_boot_finished) = true;
+  on_shutdown:
+    priority: 600
+    then:
+      - lambda: |-
+          id(is_restart) = true;
+          ESP_LOGD("shutdown", "Restart flag set: %d", id(is_restart));
+
+# WT32-ETH01 board
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Logging over network only (UART0 used by rain sensor)
+logger:
+  baud_rate: 0
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# WT32-ETH01 Ethernet (RMII pins are internal, no conflict with external GPIOs)
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 1
+  power_pin: GPIO16
+
+# Hydreon RG-9 rain sensor on UART connector (GPIO1=TX, GPIO3=RX)
+uart:
+  rx_pin: GPIO3
+  tx_pin: GPIO1
+  baud_rate: 9600
+  id: uart_rg9
+
+i2c:
+  sda: 2
+  scl: 4
+  scan: true
+  id: bus_a
+
+globals:
+  - id: is_restart
+    type: bool
+    initial_value: "0"
+    restore_value: true
+  - id: is_boot_finished
+    type: bool
+    initial_value: "0"
+    restore_value: false
+  - id: actual_fan_speed
+    type: int
+    initial_value: "4"
+    restore_value: true
+  - id: actual_fan_power
+    type: bool
+    initial_value: "0"
+    restore_value: true
+  - id: actual_fan_direction
+    type: bool
+    initial_value: "1"
+    restore_value: true
+  - id: actual_fan_cover
+    type: bool
+    initial_value: "0"
+    restore_value: true
+  # GPIO pin assignments for WT32-ETH01 custom PCB
+  # U18→Power=GPIO15, U17→Speed+=GPIO14, U16→Speed-=GPIO12
+  # U15→Direction=GPIO17, U14→Auto=GPIO5
+  - id: gpio_up_pin
+    type: int
+    initial_value: "14"
+    restore_value: no
+  - id: gpio_down_pin
+    type: int
+    initial_value: "12"
+    restore_value: no
+  - id: gpio_power_pin
+    type: int
+    initial_value: "15"
+    restore_value: no
+  - id: gpio_direction_pin
+    type: int
+    initial_value: "17"
+    restore_value: no
+  - id: gpio_auto_pin
+    type: int
+    initial_value: "5"
+    restore_value: no
+
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [maxxfan]
+
+fan:
+  - platform: speed
+    name: Fan
+    id: MaxxFan
+    output: output_speed
+    restore_mode: NO_RESTORE
+    speed_count: 10
+    on_turn_on:
+      output.turn_on: output_power
+    on_turn_off:
+      output.turn_off: output_power
+
+output:
+  - platform: maxxfan
+    power:
+      id: output_power
+    speed:
+      id: output_speed
+    direction:
+      id: output_direction
+    cover:
+      id: output_cover
+
+switch:
+  - platform: output
+    name: Cover
+    output: output_cover
+    id: maxxfan_cover
+  - platform: output
+    name: Direction
+    output: output_direction
+    id: maxxfan_direction
+
+binary_sensor:
+  - platform: status
+    name: Status
+  - platform: hydreon_rgxx
+    hydreon_rgxx_id: rg9
+    too_cold:
+      name: Rain Sensor Too Cold
+    lens_bad:
+      name: Rain Sensor Lens Bad
+    em_sat:
+      name: Rain Sensor EM Saturation
+
+time:
+  - platform: homeassistant
+    id: current_time
+    on_time_sync:
+      - component.update: timestamp
+
+sensor:
+  # Uptime (internal only)
+  - platform: uptime
+    id: uptime_sec
+
+  # Timestamp - updated once on time sync to avoid DB bloat
+  - platform: template
+    id: timestamp
+    name: Timestamp
+    device_class: timestamp
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: never
+    lambda: |-
+      static float timestamp = (
+        id(current_time).utcnow().timestamp - id(uptime_sec).state
+      );
+      return timestamp;
+
+  # Hydreon RG-9 rain sensor
+  - platform: hydreon_rgxx
+    model: RG_9
+    uart_id: uart_rg9
+    id: rg9
+    moisture:
+      name: Rain Intensity
+    temperature:
+      name: Rain Sensor Temperature
+
+  # AHT21 temperature and humidity sensor
+  - platform: aht10
+    variant: AHT20
+    temperature:
+      name: Temperature
+      accuracy_decimals: 1
+      filters:
+        - delta: 0.5
+    humidity:
+      name: Humidity
+      accuracy_decimals: 0
+      filters:
+        - delta: 1.0
+    update_interval: 10s
+
+
+button:
+  - platform: restart
+    name: Restart

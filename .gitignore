@@ -1,0 +1,11 @@
+# ESPHome secrets (contains passwords and keys)
+esphome/secrets.yaml
+
+# ESPHome build artifacts
+esphome/.esphome/
+
+# macOS
+.DS_Store
+
+# Claude
+.claude/
