@@ -127,8 +127,10 @@ globals:
 
 external_components:
   - source:
-      type: local
-      path: components
+      type: git
+      url: https://github.com/patzaa/Maxxair-automation
+      ref: main
+      path: esphome/components
     components: [maxxfan]
 
 fan:
