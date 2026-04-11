@@ -29,7 +29,7 @@ cards:
         # Fan tile with power toggle and speed slider
         - type: tile
           entity: fan.maxxfan_fan
-          name: Fan
+          name: Ventilator
           icon: mdi:fan
           features:
             - type: fan-speed
@@ -46,10 +46,10 @@ cards:
               show_icon: true
               icon: mdi:arrow-down-bold-outline
               state_display: >
-                [[[ return entity.state === 'on' ? 'Out' : 'In' ]]]
+                [[[ return entity.state === 'on' ? 'Luft raus' : 'Luft rein' ]]]
               state:
                 - value: "on"
-                  icon: mdi:arrow-up-bold-outline
+                  icon: mdi:arrow-up-bold
                   styles:
                     icon:
                       - color: rgb(68, 115, 158)
@@ -58,34 +58,34 @@ cards:
                     state:
                       - color: rgb(68, 115, 158)
                 - value: "off"
-                  icon: mdi:arrow-down-bold-outline
+                  icon: mdi:arrow-down-bold
                   styles:
                     icon:
                       - color: rgb(120, 120, 120)
                     img_cell:
-                      - background-color: rgba(120, 120, 120, 0.2)
+                      - background-color: rgba(120, 120, 120, 0.1)
                     state:
                       - color: rgb(120, 120, 120)
               tap_action:
                 action: toggle
               styles:
                 card:
-                  - height: 80px
-                  - padding: 12px
+                  - height: 60px
+                  - padding: 7px
                 grid:
                   - grid-template-areas: '"i n" "i s"'
                   - grid-template-columns: 48px 1fr
                   - grid-template-rows: 1fr 1fr
                 img_cell:
-                  - border-radius: 50%
-                  - width: 42px
-                  - height: 42px
+                  - border-radius: 60%
+                  - width: 38px
+                  - height: 38px
                   - display: flex
                   - align-items: center
                   - justify-content: center
                 icon:
-                  - width: 24px
-                  - height: 24px
+                  - width: 23px
+                  - height: 28px
                 name:
                   - justify-self: start
                   - align-self: end
