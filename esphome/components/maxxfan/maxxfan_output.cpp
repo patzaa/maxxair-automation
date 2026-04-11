@@ -19,7 +19,7 @@ int actual_fan_speed = 4;
 bool actual_fan_power = false;
 bool actual_fan_direction = true;
 bool actual_fan_cover = false;
-bool is_boot_finished = false;
+bool is_boot_finished = true;
 
 // Define external access to the switch entity for publishing state
 namespace {
