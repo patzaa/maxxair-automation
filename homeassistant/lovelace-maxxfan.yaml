@@ -101,7 +101,7 @@ cards:
               icon: mdi:arrange-bring-forward
               state:
                 - value: "on"
-                  icon: mdi:arrange-bring-forward
+                  icon: mdi:checkbox-multiple-blank-outline
                   styles:
                     icon:
                       - color: rgb(234, 179, 8)
