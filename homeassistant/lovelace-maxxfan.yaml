@@ -44,20 +44,26 @@ cards:
               show_label: false
               show_name: true
               show_icon: true
-              layout: icon_name_state
+              icon: mdi:arrow-down-bold-outline
               state_display: >
                 [[[ return entity.state === 'on' ? 'Out' : 'In' ]]]
               state:
                 - value: "on"
                   icon: mdi:arrow-up-bold-outline
-                  color: rgb(68, 115, 158)
                   styles:
+                    icon:
+                      - color: rgb(68, 115, 158)
+                    img_cell:
+                      - background-color: rgba(68, 115, 158, 0.2)
                     state:
                       - color: rgb(68, 115, 158)
                 - value: "off"
                   icon: mdi:arrow-down-bold-outline
-                  color: rgb(120, 120, 120)
                   styles:
+                    icon:
+                      - color: rgb(120, 120, 120)
+                    img_cell:
+                      - background-color: rgba(120, 120, 120, 0.2)
                     state:
                       - color: rgb(120, 120, 120)
               tap_action:
@@ -65,17 +71,30 @@ cards:
               styles:
                 card:
                   - height: 80px
+                  - padding: 12px
                 grid:
                   - grid-template-areas: '"i n" "i s"'
-                  - grid-template-columns: min-content 1fr
-                  - grid-template-rows: min-content min-content
+                  - grid-template-columns: 48px 1fr
+                  - grid-template-rows: 1fr 1fr
+                img_cell:
+                  - border-radius: 50%
+                  - width: 42px
+                  - height: 42px
+                  - display: flex
+                  - align-items: center
+                  - justify-content: center
                 icon:
-                  - width: 36px
+                  - width: 24px
+                  - height: 24px
                 name:
                   - justify-self: start
-                  - font-weight: bold
+                  - align-self: end
+                  - font-size: 14px
+                  - font-weight: 500
                 state:
                   - justify-self: start
+                  - align-self: start
+                  - font-size: 12px
             - type: tile
               entity: switch.maxxfan_cover
               name: Cover
