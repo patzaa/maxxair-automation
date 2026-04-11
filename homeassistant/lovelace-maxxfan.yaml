@@ -98,17 +98,17 @@ cards:
               show_label: false
               show_name: true
               show_icon: true
-              icon: mdi:window-closed
+              icon: mdi:arrange-bring-forward
               state:
                 - value: "on"
-                  icon: mdi:window-open
+                  icon: mdi:arrange-bring-forward
                   styles:
                     icon:
                       - color: rgb(234, 179, 8)
                     img_cell:
                       - background-color: rgba(234, 179, 8, 0.2)
                 - value: "off"
-                  icon: mdi:window-closed
+                  icon: mdi:arrange-bring-forward
                   styles:
                     icon:
                       - color: rgb(120, 120, 120)
