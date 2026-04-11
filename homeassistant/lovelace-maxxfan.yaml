@@ -39,14 +39,14 @@ cards:
           cards:
             - type: custom:button-card
               entity: switch.maxxfan_direction
-              name: Direction
+              name: Luft
               show_state: true
               show_label: false
               show_name: true
               show_icon: true
               icon: mdi:chevron-double-down
               state_display: >
-                [[[ return entity.state === 'on' ? 'Luft raus' : 'Luft rein' ]]]
+                [[[ return entity.state === 'on' ? 'raus' : 'rein' ]]]
               state:
                 - value: "on"
                   icon: mdi:chevron-double-up
