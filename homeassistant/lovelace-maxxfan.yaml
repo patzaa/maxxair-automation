@@ -90,13 +90,55 @@ cards:
                   - align-self: center
                   - font-size: 14px
                   - font-weight: 500
-            - type: tile
+            - type: custom:button-card
               entity: switch.maxxfan_cover
-              name: Cover
-              icon: mdi:arrow-up-bold
-              color: amber
+              name: >
+                [[[ return entity.state === 'on' ? 'Cover offen' : 'Cover geschlossen' ]]]
+              show_state: false
+              show_label: false
+              show_name: true
+              show_icon: true
+              icon: mdi:window-closed
+              state:
+                - value: "on"
+                  icon: mdi:window-open
+                  styles:
+                    icon:
+                      - color: rgb(234, 179, 8)
+                    img_cell:
+                      - background-color: rgba(234, 179, 8, 0.2)
+                - value: "off"
+                  icon: mdi:window-closed
+                  styles:
+                    icon:
+                      - color: rgb(120, 120, 120)
+                    img_cell:
+                      - background-color: rgba(120, 120, 120, 0.1)
               tap_action:
                 action: toggle
+              styles:
+                card:
+                  - height: 60px
+                  - padding: 7px
+                grid:
+                  - grid-template-areas: '"i n"'
+                  - grid-template-columns: 48px 1fr
+                  - grid-template-rows: 1fr
+                img_cell:
+                  - border-radius: 60%
+                  - width: 38px
+                  - height: 38px
+                  - display: flex
+                  - align-items: center
+                  - justify-content: center
+                icon:
+                  - width: 23px
+                  - height: 28px
+                name:
+                  - justify-self: start
+                  - align-self: center
+                  - font-size: 14px
+                  - font-weight: 500
 
         # Climate sensors
         - type: horizontal-stack
