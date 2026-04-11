@@ -1,4 +1,4 @@
-# MaxxFan Dashboard Card - Built-in HA cards only (no HACS required)
+# MaxxFan Dashboard Card - Requires custom:button-card from HACS
 # Copy this into your Home Assistant dashboard YAML or use the UI editor.
 
 type: vertical-stack
@@ -37,13 +37,32 @@ cards:
         # Direction and Cover controls
         - type: horizontal-stack
           cards:
-            - type: tile
+            - type: custom:button-card
               entity: switch.maxxfan_direction
               name: Direction
-              icon: mdi:rotate-left
-              color: blue
+              show_state: true
+              show_label: false
+              show_name: true
+              state_display: >
+                [[[ return entity.state === 'on' ? 'Out' : 'In' ]]]
+              state:
+                - value: "on"
+                  icon: mdi:arrow-up-bold-outline
+                  color: rgb(68, 115, 158)
+                  styles:
+                    state:
+                      - color: rgb(68, 115, 158)
+                - value: "off"
+                  icon: mdi:arrow-down-bold-outline
+                  color: rgb(120, 120, 120)
+                  styles:
+                    state:
+                      - color: rgb(120, 120, 120)
               tap_action:
                 action: toggle
+              styles:
+                card:
+                  - height: 80px
             - type: tile
               entity: switch.maxxfan_cover
               name: Cover
