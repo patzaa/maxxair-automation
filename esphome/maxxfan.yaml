@@ -62,6 +62,10 @@ ethernet:
   clk_mode: GPIO0_IN
   phy_addr: 1
   power_pin: GPIO16
+  manual_ip:
+    static_ip: 192.168.1.130
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
 
 # Hydreon RG-9 rain sensor on UART connector (GPIO1=TX, GPIO3=RX)
 uart:

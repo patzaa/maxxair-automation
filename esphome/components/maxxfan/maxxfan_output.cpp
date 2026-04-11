@@ -9,12 +9,12 @@ namespace maxxfan {
 
 static const char *TAG = "maxxfan";
 
-// Define global variables
-int gpio_up_pin = 0;
-int gpio_down_pin = 0;
-int gpio_power_pin = 0;
-int gpio_direction_pin = 0;
-int gpio_auto_pin = 0;
+// GPIO pin assignments for WT32-ETH01 custom PCB
+int gpio_up_pin = 14;
+int gpio_down_pin = 12;
+int gpio_power_pin = 15;
+int gpio_direction_pin = 17;
+int gpio_auto_pin = 5;
 int actual_fan_speed = 4;
 bool actual_fan_power = false;
 bool actual_fan_direction = true;
