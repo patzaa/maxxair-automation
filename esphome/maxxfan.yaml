@@ -21,7 +21,9 @@ esphome:
         call.perform();
         call.set_state(id(actual_fan_power));
         call.perform();
-        id(maxxfan_direction).publish_state(id(actual_fan_direction));
+        auto dir_call = id(maxxfan_direction).make_call();
+        dir_call.set_option(id(actual_fan_direction) ? "Exhaust" : "Intake");
+        dir_call.perform();
         id(maxxfan_cover).publish_state(id(actual_fan_cover));
         ESP_LOGD("boot", "Power: %d, Speed: %d, Direction: %d, Cover: %d",
                  id(actual_fan_power), id(actual_fan_speed),
@@ -165,10 +167,23 @@ switch:
     name: Cover
     output: output_cover
     id: maxxfan_cover
-  - platform: output
+select:
+  - platform: template
     name: Direction
-    output: output_direction
     id: maxxfan_direction
+    options:
+      - "Exhaust"
+      - "Intake"
+    initial_option: "Exhaust"
+    optimistic: true
+    on_value:
+      then:
+        - lambda: |-
+            if (x == "Exhaust") {
+              id(output_direction).turn_on();
+            } else {
+              id(output_direction).turn_off();
+            }
 
 binary_sensor:
   - platform: status
