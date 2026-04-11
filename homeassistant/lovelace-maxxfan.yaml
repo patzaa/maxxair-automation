@@ -43,6 +43,8 @@ cards:
               show_state: true
               show_label: false
               show_name: true
+              show_icon: true
+              layout: icon_name_state
               state_display: >
                 [[[ return entity.state === 'on' ? 'Out' : 'In' ]]]
               state:
@@ -63,6 +65,17 @@ cards:
               styles:
                 card:
                   - height: 80px
+                grid:
+                  - grid-template-areas: '"i n" "i s"'
+                  - grid-template-columns: min-content 1fr
+                  - grid-template-rows: min-content min-content
+                icon:
+                  - width: 36px
+                name:
+                  - justify-self: start
+                  - font-weight: bold
+                state:
+                  - justify-self: start
             - type: tile
               entity: switch.maxxfan_cover
               name: Cover
