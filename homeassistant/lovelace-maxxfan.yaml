@@ -98,17 +98,17 @@ cards:
               show_label: false
               show_name: true
               show_icon: true
-              icon: mdi:arrange-bring-forward
+              icon: mdi:checkbox-blank
               state:
                 - value: "on"
-                  icon: mdi:checkbox-multiple-blank-outline
+                  icon: mdi:checkbox-blank-outline
                   styles:
                     icon:
                       - color: rgb(234, 179, 8)
                     img_cell:
                       - background-color: rgba(234, 179, 8, 0.2)
                 - value: "off"
-                  icon: mdi:arrange-bring-forward
+                  icon: mdi:checkbox-blank
                   styles:
                     icon:
                       - color: rgb(120, 120, 120)
