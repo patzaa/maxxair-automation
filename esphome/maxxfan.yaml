@@ -217,9 +217,9 @@ sensor:
     temperature:
       name: Rain Sensor Temperature
 
-  # AHT21 temperature and humidity sensor
-  - platform: aht10
-    variant: AHT20
+  # GY-BME280 temperature, humidity & pressure sensor
+  - platform: bme280_i2c
+    address: 0x76
     temperature:
       name: Temperature
       accuracy_decimals: 1
@@ -230,6 +230,9 @@ sensor:
       accuracy_decimals: 0
       filters:
         - delta: 1.0
+    pressure:
+      name: Pressure
+      accuracy_decimals: 1
     update_interval: 10s
 
 
