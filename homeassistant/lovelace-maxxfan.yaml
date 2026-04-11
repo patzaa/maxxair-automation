@@ -44,12 +44,12 @@ cards:
               show_label: false
               show_name: true
               show_icon: true
-              icon: mdi:arrow-down-bold-outline
+              icon: mdi:chevron-double-down
               state_display: >
                 [[[ return entity.state === 'on' ? 'Luft raus' : 'Luft rein' ]]]
               state:
                 - value: "on"
-                  icon: mdi:arrow-up-bold
+                  icon: mdi:chevron-double-up
                   styles:
                     icon:
                       - color: rgb(68, 115, 158)
@@ -58,7 +58,7 @@ cards:
                     state:
                       - color: rgb(68, 115, 158)
                 - value: "off"
-                  icon: mdi:arrow-down-bold
+                  icon: mdi:chevron-double-down
                   styles:
                     icon:
                       - color: rgb(120, 120, 120)
