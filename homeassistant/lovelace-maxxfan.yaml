@@ -39,14 +39,13 @@ cards:
           cards:
             - type: custom:button-card
               entity: switch.maxxfan_direction
-              name: Luft
-              show_state: true
+              name: >
+                [[[ return entity.state === 'on' ? 'Luft raus' : 'Luft rein' ]]]
+              show_state: false
               show_label: false
               show_name: true
               show_icon: true
               icon: mdi:chevron-double-down
-              state_display: >
-                [[[ return entity.state === 'on' ? 'raus' : 'rein' ]]]
               state:
                 - value: "on"
                   icon: mdi:chevron-double-up
@@ -73,9 +72,9 @@ cards:
                   - height: 60px
                   - padding: 7px
                 grid:
-                  - grid-template-areas: '"i n" "i s"'
+                  - grid-template-areas: '"i n"'
                   - grid-template-columns: 48px 1fr
-                  - grid-template-rows: 1fr 1fr
+                  - grid-template-rows: 1fr
                 img_cell:
                   - border-radius: 60%
                   - width: 38px
@@ -88,13 +87,9 @@ cards:
                   - height: 28px
                 name:
                   - justify-self: start
-                  - align-self: end
+                  - align-self: center
                   - font-size: 14px
                   - font-weight: 500
-                state:
-                  - justify-self: start
-                  - align-self: start
-                  - font-size: 12px
             - type: tile
               entity: switch.maxxfan_cover
               name: Cover
