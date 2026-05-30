@@ -240,3 +240,10 @@ sensor:
 button:
   - platform: restart
     name: Restart
+  # Resync the speed tracker with the physical fan (no feedback from the MaxxFan).
+  # Run with the fan ON: drives it to minimum and resets the tracker to 1.
+  - platform: template
+    name: Sync Speed
+    icon: mdi:fan-alert
+    on_press:
+      - lambda: "maxxfan::home_speed();"

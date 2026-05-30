@@ -39,6 +39,25 @@ void link_state_globals(globals::RestoringGlobalsComponent<int> *speed,
   g_is_boot_finished = boot;
 }
 
+void home_speed() {
+  // The MaxxFan gives no speed feedback, so force it to a known floor. From any
+  // real speed (max 10), 11 down-presses guarantee it lands at the minimum (1);
+  // extra presses at the floor are harmless. Then the tracker matches reality.
+  if (g_actual_fan_power == nullptr || g_actual_fan_power->value() == 0) {
+    ESP_LOGW(TAG, "home_speed() ignored: turn the fan on first");
+    return;
+  }
+  ESP_LOGD(TAG, "Homing speed to minimum...");
+  for (int i = 0; i < 11; i++) {
+    digitalWrite(gpio_down_pin, HIGH);
+    delay(100);
+    digitalWrite(gpio_down_pin, LOW);
+    delay(100);
+  }
+  g_actual_fan_speed->value() = 1;
+  ESP_LOGD(TAG, "Speed homed; tracker reset to 1");
+}
+
 // Publish the Cover switch state to the front end. The MaxxFan moves its lid
 // automatically when power is pressed, so the switch must follow.
 static void publish_cover(bool state) {

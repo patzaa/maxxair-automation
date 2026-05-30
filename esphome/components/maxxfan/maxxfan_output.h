@@ -34,6 +34,14 @@ void link_state_globals(globals::RestoringGlobalsComponent<int> *speed,
                         globals::RestoringGlobalsComponent<bool> *cover,
                         globals::GlobalsComponent<bool> *boot);
 
+// Resync: there is no speed feedback from the MaxxFan, so if the tracker and the
+// real fan drift apart (e.g. the fan was at 100% while the tracker said 1), every
+// speed press fights the wrong direction and the fan error-beeps. home_speed()
+// drives the fan to a known floor (presses DOWN enough times to reach speed 1
+// from anywhere) and resets the tracker to 1. Call it from a template button,
+// with the fan running.
+void home_speed();
+
 class SpeedOutput : public Component, public output::FloatOutput {
  public:
   void setup() override;
