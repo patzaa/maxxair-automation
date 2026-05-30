@@ -159,12 +159,6 @@ output:
       id: output_direction
     cover:
       id: output_cover
-    # Bind the component to the shared state globals (single source of truth)
-    actual_fan_speed_id: actual_fan_speed
-    actual_fan_power_id: actual_fan_power
-    actual_fan_direction_id: actual_fan_direction
-    actual_fan_cover_id: actual_fan_cover
-    is_boot_finished_id: is_boot_finished
 
 switch:
   - platform: output
@@ -240,10 +234,3 @@ sensor:
 button:
   - platform: restart
     name: Restart
-  # Resync the speed tracker with the physical fan (no feedback from the MaxxFan).
-  # Run with the fan ON: drives it to minimum and resets the tracker to 1.
-  - platform: template
-    name: Sync Speed
-    icon: mdi:fan-alert
-    on_press:
-      - lambda: "maxxfan::home_speed();"
