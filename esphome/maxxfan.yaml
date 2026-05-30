@@ -67,10 +67,10 @@ ethernet:
     gateway: 192.168.1.1
     subnet: 255.255.255.0
 
-# Hydreon RG-9 rain sensor on UART connector (GPIO1=TX, GPIO3=RX)
+# Hydreon RG-9 rain sensor on UART connector (swapped: GPIO3=TX, GPIO1=RX)
 uart:
-  rx_pin: GPIO3
-  tx_pin: GPIO1
+  rx_pin: GPIO1
+  tx_pin: GPIO3
   baud_rate: 9600
   id: uart_rg9
 
@@ -217,19 +217,14 @@ sensor:
     temperature:
       name: Rain Sensor Temperature
 
-  # GY-BME280 temperature, humidity & pressure sensor
-  - platform: bme280_i2c
+  # GY-"BME280" module — actually a BMP280 (chip ID mismatch in logs, no humidity)
+  - platform: bmp280_i2c
     address: 0x76
     temperature:
       name: Temperature
       accuracy_decimals: 1
       filters:
         - delta: 0.5
-    humidity:
-      name: Humidity
-      accuracy_decimals: 0
-      filters:
-        - delta: 1.0
     pressure:
       name: Pressure
       accuracy_decimals: 1
