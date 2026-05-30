@@ -4,33 +4,40 @@
 #include "esphome/components/output/float_output.h"
 #include "esphome/components/output/binary_output.h"
 #include "esphome/components/switch/switch.h"
+#include "esphome/components/globals/globals_component.h"
 
 namespace esphome {
 namespace maxxfan {
 
-// Define global variables
+// GPIO pin assignments for the WT32-ETH01 custom PCB. These are static wiring
+// facts, so they stay hardcoded here (see maxxfan_output.cpp).
 extern int gpio_up_pin;
 extern int gpio_down_pin;
 extern int gpio_power_pin;
 extern int gpio_direction_pin;
 extern int gpio_auto_pin;
-extern int actual_fan_speed;
-extern bool actual_fan_power;
-extern bool actual_fan_direction;
-extern bool actual_fan_cover;
-extern bool is_boot_finished;
+
+// Fan state is owned by the YAML `globals:` (persisted to flash and driven by the
+// on_boot handshake). The component holds POINTERS to those globals so there is a
+// single source of truth shared between the lambda and the button logic — instead
+// of the private, disconnected copies this component used to keep.
+extern globals::RestoringGlobalsComponent<int> *g_actual_fan_speed;
+extern globals::RestoringGlobalsComponent<bool> *g_actual_fan_power;
+extern globals::RestoringGlobalsComponent<bool> *g_actual_fan_direction;
+extern globals::RestoringGlobalsComponent<bool> *g_actual_fan_cover;
+extern globals::GlobalsComponent<bool> *g_is_boot_finished;
+
+// Bind the pointers above to the YAML globals. Called once from codegen.
+void link_state_globals(globals::RestoringGlobalsComponent<int> *speed,
+                        globals::RestoringGlobalsComponent<bool> *power,
+                        globals::RestoringGlobalsComponent<bool> *direction,
+                        globals::RestoringGlobalsComponent<bool> *cover,
+                        globals::GlobalsComponent<bool> *boot);
 
 class SpeedOutput : public Component, public output::FloatOutput {
  public:
   void setup() override;
-  void loop() override;
   void write_state(float state) override;
-
- protected:
-  int target_speed_{0};
-  bool stepping_{false};
-  bool pin_high_{false};
-  uint32_t last_step_time_{0};
 };
 
 class PowerOutput : public Component, public output::BinaryOutput {

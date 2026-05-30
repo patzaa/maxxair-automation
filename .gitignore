@@ -9,3 +9,6 @@ esphome/.esphome/
 
 # Claude
 .claude/
+
+# Vendored upstream reference (not part of this project's source)
+reference-implementations/

@@ -159,6 +159,12 @@ output:
       id: output_direction
     cover:
       id: output_cover
+    # Bind the component to the shared state globals (single source of truth)
+    actual_fan_speed_id: actual_fan_speed
+    actual_fan_power_id: actual_fan_power
+    actual_fan_direction_id: actual_fan_direction
+    actual_fan_cover_id: actual_fan_cover
+    is_boot_finished_id: is_boot_finished
 
 switch:
   - platform: output

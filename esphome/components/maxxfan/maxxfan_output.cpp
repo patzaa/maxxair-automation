@@ -2,7 +2,8 @@
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
 #include "esphome/components/switch/switch.h"
-#include "Arduino.h"  // Add this for pinMode, digitalWrite, HIGH, LOW, etc.
+#include "Arduino.h"  // pinMode, digitalWrite, HIGH, LOW, etc.
+#include <cmath>      // lroundf
 
 namespace esphome {
 namespace maxxfan {
@@ -10,20 +11,43 @@ namespace maxxfan {
 static const char *TAG = "maxxfan";
 
 // GPIO pin assignments for WT32-ETH01 custom PCB
+// U18->Power=GPIO15, U17->Speed+=GPIO14, U16->Speed-=GPIO12
+// U15->Direction=GPIO17, U14->Auto=GPIO5
 int gpio_up_pin = 14;
 int gpio_down_pin = 12;
 int gpio_power_pin = 15;
 int gpio_direction_pin = 17;
 int gpio_auto_pin = 5;
-int actual_fan_speed = 4;
-bool actual_fan_power = false;
-bool actual_fan_direction = true;
-bool actual_fan_cover = false;
-bool is_boot_finished = true;
 
-// Define external access to the switch entity for publishing state
-namespace {
-  switch_::Switch *maxxfan_cover = nullptr;
+// Pointers to the shared YAML globals (single source of truth). Bound once via
+// link_state_globals() during codegen-generated setup.
+globals::RestoringGlobalsComponent<int> *g_actual_fan_speed = nullptr;
+globals::RestoringGlobalsComponent<bool> *g_actual_fan_power = nullptr;
+globals::RestoringGlobalsComponent<bool> *g_actual_fan_direction = nullptr;
+globals::RestoringGlobalsComponent<bool> *g_actual_fan_cover = nullptr;
+globals::GlobalsComponent<bool> *g_is_boot_finished = nullptr;
+
+void link_state_globals(globals::RestoringGlobalsComponent<int> *speed,
+                        globals::RestoringGlobalsComponent<bool> *power,
+                        globals::RestoringGlobalsComponent<bool> *direction,
+                        globals::RestoringGlobalsComponent<bool> *cover,
+                        globals::GlobalsComponent<bool> *boot) {
+  g_actual_fan_speed = speed;
+  g_actual_fan_power = power;
+  g_actual_fan_direction = direction;
+  g_actual_fan_cover = cover;
+  g_is_boot_finished = boot;
+}
+
+// Publish the Cover switch state to the front end. The MaxxFan moves its lid
+// automatically when power is pressed, so the switch must follow.
+static void publish_cover(bool state) {
+  for (auto *sw : App.get_switches()) {
+    if (sw->get_name() == "Cover") {
+      sw->publish_state(state);
+      break;
+    }
+  }
 }
 
 void SpeedOutput::setup() {
@@ -32,61 +56,35 @@ void SpeedOutput::setup() {
   ESP_LOGD(TAG, "SpeedOutput setup complete");
 }
 
-void SpeedOutput::loop() {
-  if (!this->stepping_)
-    return;
-
-  uint32_t now = millis();
-  if (now - this->last_step_time_ < 100)
-    return;
-
-  this->last_step_time_ = now;
-
-  if (this->pin_high_) {
-    // Release the pin after 100ms HIGH
-    if (this->target_speed_ > actual_fan_speed) {
-      digitalWrite(gpio_up_pin, LOW);
-    } else {
-      digitalWrite(gpio_down_pin, LOW);
-    }
-    this->pin_high_ = false;
-
-    // Update speed tracker after completing one pulse
-    if (this->target_speed_ > actual_fan_speed && actual_fan_speed < 10) {
-      ++actual_fan_speed;
-      ESP_LOGD(TAG, "Speed changed to: %d", actual_fan_speed);
-    } else if (this->target_speed_ < actual_fan_speed && actual_fan_speed > 1) {
-      --actual_fan_speed;
-      ESP_LOGD(TAG, "Speed changed to: %d", actual_fan_speed);
-    }
-
-    // Check if we've reached the target
-    if (actual_fan_speed == this->target_speed_) {
-      this->stepping_ = false;
-    }
-  } else {
-    // Drive the appropriate pin HIGH for next step
-    if (this->target_speed_ > actual_fan_speed && actual_fan_speed < 10) {
-      digitalWrite(gpio_up_pin, HIGH);
-      this->pin_high_ = true;
-    } else if (this->target_speed_ < actual_fan_speed && actual_fan_speed > 1) {
-      digitalWrite(gpio_down_pin, HIGH);
-      this->pin_high_ = true;
-    } else {
-      // Target reached or out of range
-      this->stepping_ = false;
-    }
-  }
-}
-
 void SpeedOutput::write_state(float state) {
-  int FanSet = state * 10;
-  if (FanSet == 0 || FanSet == actual_fan_speed || actual_fan_power == 0 || !is_boot_finished)
+  // state is 0.0..1.0; convert to an integer speed 0..10. Use lroundf, not a
+  // bare cast: 0.7f * 10 == 6.9999 would truncate to 6.
+  int FanSet = (int) lroundf(state * 10);
+  int &speed = g_actual_fan_speed->value();
+  // Do nothing while booting, if already at target, if power is off, or if the
+  // UI requested 0 (which means "off" and is handled by the power output).
+  if (FanSet == 0 || FanSet == speed || g_actual_fan_power->value() == 0 ||
+      !g_is_boot_finished->value())
     return;
-  this->target_speed_ = FanSet;
-  this->stepping_ = true;
-  this->pin_high_ = false;
-  this->last_step_time_ = millis() - 100;  // Start immediately
+  // The MaxxFan only changes speed one step per button press, so ramp by pulsing
+  // up/down until the tracker reaches the target. Blocking is intentional and
+  // matches the power/direction/cover outputs (max ~9 steps).
+  while (FanSet > speed && speed < 10) {
+    digitalWrite(gpio_up_pin, HIGH);
+    delay(100);
+    digitalWrite(gpio_up_pin, LOW);
+    delay(100);
+    ++speed;
+    ESP_LOGD(TAG, "Speed changed to: %d", speed);
+  }
+  while (FanSet < speed && speed > 1) {
+    digitalWrite(gpio_down_pin, HIGH);
+    delay(100);
+    digitalWrite(gpio_down_pin, LOW);
+    delay(100);
+    --speed;
+    ESP_LOGD(TAG, "Speed changed to: %d", speed);
+  }
 }
 
 void PowerOutput::setup() {
@@ -95,28 +93,15 @@ void PowerOutput::setup() {
 }
 
 void PowerOutput::write_state(bool FanSet) {
-  // Don't do anything if still booting or if request already matches actual
-  if (FanSet != actual_fan_power && is_boot_finished) {
+  if (FanSet != g_actual_fan_power->value() && g_is_boot_finished->value()) {
     digitalWrite(gpio_power_pin, HIGH);
     delay(100);
     digitalWrite(gpio_power_pin, LOW);
-    actual_fan_power = FanSet;
-    actual_fan_cover = FanSet; // Maxxfan automatically changes cover on power action
-
-    // Access the switch entity from the yaml configuration to publish state
-    for (auto *sw : App.get_switches()) {
-      if (sw->get_name() == "Cover") {
-        maxxfan_cover = sw;
-        break;
-      }
-    }
-
-    if (maxxfan_cover != nullptr) {
-      maxxfan_cover->publish_state(FanSet);  // Update front end
-    }
-
-    ESP_LOGD(TAG, "Power changed to: %s", actual_fan_power ? "On" : "Off");
-    ESP_LOGD(TAG, "Cover changed to: %s", actual_fan_cover ? "Open" : "Close");
+    g_actual_fan_power->value() = FanSet;
+    g_actual_fan_cover->value() = FanSet;  // MaxxFan auto-moves the cover with power
+    publish_cover(FanSet);
+    ESP_LOGD(TAG, "Power changed to: %s", FanSet ? "On" : "Off");
+    ESP_LOGD(TAG, "Cover changed to: %s", FanSet ? "Open" : "Close");
   }
 }
 
@@ -126,43 +111,33 @@ void DirectionOutput::setup() {
 }
 
 void DirectionOutput::write_state(bool FanSet) {
-  // Don't do anything if still booting, or if request already matches actual
-  // or if power is turned off  
-  if ((FanSet != actual_fan_direction) && (actual_fan_power != 0) && is_boot_finished) {
+  // Direction can only be changed while the fan is running.
+  if (FanSet != g_actual_fan_direction->value() && g_actual_fan_power->value() != 0 &&
+      g_is_boot_finished->value()) {
     digitalWrite(gpio_direction_pin, HIGH);
     delay(100);
     digitalWrite(gpio_direction_pin, LOW);
-    actual_fan_direction = FanSet;
-    ESP_LOGD(TAG, "Direction changed to: %s", actual_fan_direction ? "Reverse" : "Forward");
+    g_actual_fan_direction->value() = FanSet;
+    ESP_LOGD(TAG, "Direction changed to: %s", FanSet ? "Reverse" : "Forward");
   }
 }
 
 void CoverOutput::setup() {
   pinMode(gpio_up_pin, OUTPUT);
   pinMode(gpio_down_pin, OUTPUT);
-  
-  // Find and store a reference to the maxxfan_cover switch entity
-  for (auto *sw : App.get_switches()) {
-    if (sw->get_name() == "Cover") {
-      maxxfan_cover = sw;
-      break;
-    }
-  }
-  
   ESP_LOGD(TAG, "CoverOutput setup complete");
 }
 
 void CoverOutput::write_state(bool FanSet) {
-  // Don't do anything if still booting or if request already matches actual 
-  if (FanSet != actual_fan_cover && is_boot_finished) {
-    // Need to simultaneously press the up and down buttons
+  if (FanSet != g_actual_fan_cover->value() && g_is_boot_finished->value()) {
+    // Press UP and DOWN simultaneously to toggle the lid.
     digitalWrite(gpio_up_pin, HIGH);
     digitalWrite(gpio_down_pin, HIGH);
     delay(200);
     digitalWrite(gpio_up_pin, LOW);
     digitalWrite(gpio_down_pin, LOW);
-    actual_fan_cover = FanSet;
-    ESP_LOGD(TAG, "Cover changed to: %s", actual_fan_cover ? "Open" : "Close");
+    g_actual_fan_cover->value() = FanSet;
+    ESP_LOGD(TAG, "Cover changed to: %s", FanSet ? "Open" : "Close");
   }
 }
 
